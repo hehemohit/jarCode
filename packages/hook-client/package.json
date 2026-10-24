@@ -1,0 +1,21 @@
+{
+  "name": "@antigravity-bridge/hook-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "antigravity-hook": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\""
+  },
+  "dependencies": {
+    "@antigravity-bridge/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "typescript": "^5.8.2"
+  }
+}

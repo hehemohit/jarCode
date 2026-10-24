@@ -1,0 +1,17 @@
+{
+  "name": "jarcode-root",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Antigravity Remote Bridge & Approval Gate",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "turbo": "^2.4.4",
+    "typescript": "^5.8.2"
+  },
+  "packageManager": "pnpm@10.5.2"
+}

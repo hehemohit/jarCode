@@ -154,18 +154,24 @@ export const useBridgeStore = create<BridgeState>((set, get) => ({
 
         // Chat message
         if (type === 'agent.message') {
-          set((s) => ({
-            messages: [
-              ...s.messages,
-              {
-                id: id || Math.random().toString(),
-                role: payload.role,
-                content: payload.content,
-                stepIdx: payload.stepIdx,
-                ts: ts || Date.now(),
-              },
-            ],
-          }));
+          const messageId = id || (payload.content + '_' + (payload.stepIdx || ts || Date.now()));
+          set((s) => {
+            if (s.messages.some((m) => m.id === messageId)) {
+              return s;
+            }
+            return {
+              messages: [
+                ...s.messages,
+                {
+                  id: messageId,
+                  role: payload.role,
+                  content: payload.content,
+                  stepIdx: payload.stepIdx,
+                  ts: ts || Date.now(),
+                },
+              ],
+            };
+          });
         }
 
         // Agent thought
@@ -245,19 +251,6 @@ export const useBridgeStore = create<BridgeState>((set, get) => ({
     const text = content.trim();
     if (!text) return;
     const sessionId = get().sessionId || 'abf018be-2f73-4f42-b54c-c8b493daa487';
-    const tempId = Math.random().toString(36).substring(2, 9);
-
-    set((s) => ({
-      messages: [
-        ...s.messages,
-        {
-          id: tempId,
-          role: 'user',
-          content: text,
-          ts: Date.now(),
-        },
-      ],
-    }));
 
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(

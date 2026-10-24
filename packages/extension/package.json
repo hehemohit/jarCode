@@ -1,0 +1,44 @@
+{
+  "name": "antigravity-bridge-companion",
+  "displayName": "Antigravity Remote Bridge Companion",
+  "description": "Bidirectional bridge connecting Antigravity IDE to your mobile device and browser client over Tailscale.",
+  "version": "0.1.0",
+  "publisher": "antigravity",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "antigravityBridge.openPortal",
+        "title": "Antigravity Bridge: Open Web Portal"
+      },
+      {
+        "command": "antigravityBridge.reconnectDaemon",
+        "title": "Antigravity Bridge: Reconnect to Daemon"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "@types/vscode": "^1.90.0",
+    "@types/ws": "^8.5.14",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.8.2"
+  }
+}

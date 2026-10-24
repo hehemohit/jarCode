@@ -61,6 +61,17 @@ export function createHttpServer(policyEngine: PolicyEngine, transcriptTailer: T
     return decision;
   });
 
+  // Explicitly attach a transcript path to monitor
+  fastify.post('/api/transcript/attach', async (request, reply) => {
+    const { transcriptPath, sessionId } = (request.body as { transcriptPath: string; sessionId?: string }) || {};
+    if (!transcriptPath || !fs.existsSync(transcriptPath)) {
+      return reply.code(400).send({ error: 'Transcript path does not exist' });
+    }
+    const resolvedSessionId = sessionId || path.basename(path.dirname(path.dirname(transcriptPath)));
+    transcriptTailer.trackFile(transcriptPath, resolvedSessionId);
+    return { success: true, sessionId: resolvedSessionId, transcriptPath };
+  });
+
   // Get pending approvals
   fastify.get('/api/gate/pending', async () => {
     return policyEngine.getPendingList();

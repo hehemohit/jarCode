@@ -112,6 +112,16 @@ export const useBridgeStore = create<BridgeState>((set, get) => ({
           return;
         }
 
+        // Initial chat history on connect
+        if (type === 'init.chat_history') {
+          const { messages, thoughts } = payload || {};
+          set({
+            messages: messages || [],
+            thoughts: thoughts || [],
+          });
+          return;
+        }
+
         // Approval requested
         if (type === 'gate.approval_requested') {
           const newApproval: PendingApproval = {

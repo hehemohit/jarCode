@@ -219,6 +219,15 @@ export class BridgeDatabase {
     return this.stmtGetApprovalById.get(id) as DbApproval | undefined;
   }
 
+  public getRecentChatHistory(limit = 200): Array<{ id: string; type: string; payload: string; ts: number }> {
+    return this.db.prepare(`
+      SELECT id, type, payload, ts FROM events
+      WHERE type IN ('agent.message', 'agent.thought')
+      ORDER BY seq ASC
+      LIMIT ?
+    `).all(limit) as any[];
+  }
+
   public close() {
     this.db.close();
   }

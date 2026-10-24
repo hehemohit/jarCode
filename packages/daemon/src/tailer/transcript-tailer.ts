@@ -96,17 +96,31 @@ export class TranscriptTailer {
     const content = entry.content || '';
 
     if (entryType === 'USER_INPUT') {
-      const payload = { role: 'user', content, stepIdx: entry.step_index };
-      const { seq, ts } = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'agent.message', payload);
-      this.broadcast('agent.message', payload, seq, ts);
+      let cleanContent = content;
+      const match = content.match(/<USER_REQUEST>([\s\S]*?)<\/USER_REQUEST>/);
+      if (match) {
+        cleanContent = match[1].trim();
+      } else {
+        cleanContent = content
+          .replace(/<ADDITIONAL_METADATA>[\s\S]*?<\/ADDITIONAL_METADATA>/g, '')
+          .replace(/<USER_SETTINGS_CHANGE>[\s\S]*?<\/USER_SETTINGS_CHANGE>/g, '')
+          .trim();
+      }
+
+      if (cleanContent) {
+        const payload = { role: 'user', content: cleanContent, stepIdx: entry.step_index };
+        const { seq, ts } = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'agent.message', payload);
+        this.broadcast('agent.message', payload, seq, ts);
+      }
     } else if (entryType === 'PLANNER_RESPONSE') {
       if (content) {
         const payload = { role: 'assistant', content, stepIdx: entry.step_index };
         const { seq, ts } = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'agent.message', payload);
         this.broadcast('agent.message', payload, seq, ts);
       }
-      if (entry.thought) {
-        const payload = { text: entry.thought, stepIdx: entry.step_index };
+      if (entry.thinking || entry.thought) {
+        const text = entry.thinking || entry.thought;
+        const payload = { text, stepIdx: entry.step_index };
         const { seq, ts } = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'agent.thought', payload);
         this.broadcast('agent.thought', payload, seq, ts);
       }

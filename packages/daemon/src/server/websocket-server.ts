@@ -43,6 +43,37 @@ export class BridgeWebSocketServer {
       // Send initial pending approvals
       const pending = this.policyEngine.getPendingList();
       ws.send(JSON.stringify({ type: 'init.pending_approvals', payload: pending }));
+
+      // Send initial chat messages and thoughts
+      const history = this.db.getRecentChatHistory(200);
+      const messages: any[] = [];
+      const thoughts: any[] = [];
+
+      for (const ev of history) {
+        try {
+          const parsed = JSON.parse(ev.payload);
+          if (ev.type === 'agent.message') {
+            messages.push({
+              id: ev.id,
+              role: parsed.role,
+              content: parsed.content,
+              stepIdx: parsed.stepIdx,
+              ts: ev.ts,
+            });
+          } else if (ev.type === 'agent.thought') {
+            thoughts.push({
+              id: ev.id,
+              text: parsed.text,
+              stepIdx: parsed.stepIdx,
+              ts: ev.ts,
+            });
+          }
+        } catch {
+          // Ignored
+        }
+      }
+
+      ws.send(JSON.stringify({ type: 'init.chat_history', payload: { messages, thoughts } }));
     });
   }
 
@@ -108,6 +139,25 @@ export class BridgeWebSocketServer {
       const { processId, cols, rows } = payload || {};
       if (processId && cols && rows) {
         this.processManager.resize(processId, cols, rows);
+      }
+    }
+
+    // 6. User Prompt from Web/Mobile
+    else if (type === 'client.prompt_submitted') {
+      const { content, sessionId } = payload || {};
+      if (content) {
+        const sid = sessionId || 'abf018be-2f73-4f42-b54c-c8b493daa487';
+        const msgPayload = { role: 'user', content: content.trim() };
+        const { seq, ts } = this.db.appendEvent(randomUUID(), sid, 'client', 'agent.message', msgPayload);
+        this.broadcast({
+          id: randomUUID(),
+          sessionId: sid,
+          seq,
+          ts,
+          source: 'client',
+          type: 'agent.message',
+          payload: msgPayload,
+        });
       }
     }
   }

@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ./packages/hook-client/dist/index.js",
+            "command": "node ../packages/hook-client/dist/index.js",
             "timeout": 300
           }
         ]

@@ -128,9 +128,9 @@ export class TranscriptTailer {
   private processTranscriptEntry(entry: any) {
     if (!this.sessionId) return;
 
-    // Check entry types: USER_INPUT, PLANNER_RESPONSE, thoughts, tool_calls
     const entryType = entry.type || '';
     const content = entry.content || '';
+    const stepIdx = entry.step_index;
 
     if (entryType === 'USER_INPUT') {
       let cleanContent = content;
@@ -145,22 +145,55 @@ export class TranscriptTailer {
       }
 
       if (cleanContent) {
-        const payload = { role: 'user', content: cleanContent, stepIdx: entry.step_index };
+        const payload = { role: 'user', content: cleanContent, stepIdx };
         const { seq, ts } = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'agent.message', payload);
         this.broadcast('agent.message', payload, seq, ts);
+
+        // Notify session is executing
+        const statusPayload = { status: 'executing', stepIdx };
+        const sRes = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'session.status_changed', statusPayload);
+        this.broadcast('session.status_changed', statusPayload, sRes.seq, sRes.ts);
       }
     } else if (entryType === 'PLANNER_RESPONSE') {
-      if (content) {
-        const payload = { role: 'assistant', content, stepIdx: entry.step_index };
-        const { seq, ts } = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'agent.message', payload);
-        this.broadcast('agent.message', payload, seq, ts);
-      }
+      // 1. Thinking process
       if (entry.thinking || entry.thought) {
         const text = entry.thinking || entry.thought;
-        const payload = { text, stepIdx: entry.step_index };
+        const payload = { text, stepIdx };
         const { seq, ts } = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'agent.thought', payload);
         this.broadcast('agent.thought', payload, seq, ts);
       }
+
+      // 2. Tool calls requested
+      const hasToolCalls = Array.isArray(entry.tool_calls) && entry.tool_calls.length > 0;
+      if (hasToolCalls) {
+        for (const tc of entry.tool_calls) {
+          const payload = { name: tc.name, args: tc.args || {}, stepIdx };
+          const { seq, ts } = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'agent.tool_call', payload);
+          this.broadcast('agent.tool_call', payload, seq, ts);
+        }
+        // Mark executing
+        const statusPayload = { status: 'executing', stepIdx };
+        const sRes = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'session.status_changed', statusPayload);
+        this.broadcast('session.status_changed', statusPayload, sRes.seq, sRes.ts);
+      }
+
+      // 3. Assistant text message
+      if (content) {
+        const payload = { role: 'assistant', content, stepIdx };
+        const { seq, ts } = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'agent.message', payload);
+        this.broadcast('agent.message', payload, seq, ts);
+
+        // If no tool calls in this turn, the assistant finished its response -> status: idle
+        if (!hasToolCalls) {
+          const statusPayload = { status: 'idle', stepIdx };
+          const sRes = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'session.status_changed', statusPayload);
+          this.broadcast('session.status_changed', statusPayload, sRes.seq, sRes.ts);
+        }
+      }
+    } else if (['RUN_COMMAND', 'VIEW_FILE', 'LIST_DIRECTORY', 'GREP_SEARCH', 'CODE_ACTION', 'BROWSER_SUBAGENT'].includes(entryType)) {
+      const payload = { toolType: entryType, status: entry.status || 'DONE', stepIdx };
+      const { seq, ts } = this.db.appendEvent(randomUUID(), this.sessionId, 'agent', 'agent.tool_result', payload);
+      this.broadcast('agent.tool_result', payload, seq, ts);
     }
   }
 

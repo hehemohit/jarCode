@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useBridgeStore } from '../store/useBridgeStore.ts';
-import { Plus, Mic, ArrowUp, ChevronDown } from 'lucide-react';
+import { Plus, Mic, ArrowUp, ChevronDown, Square } from 'lucide-react';
 
 export const ChatInput: React.FC = () => {
   const [text, setText] = useState('');
-  const { sendMessage } = useBridgeStore();
+  const { sendMessage, isExecuting, stopExecution } = useBridgeStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea as text grows
@@ -16,7 +16,14 @@ export const ChatInput: React.FC = () => {
   }, [text]);
 
   const handleSend = () => {
-    if (!text.trim()) return;
+    if (isExecuting) {
+      console.warn('[ChatInput WARN] Cannot send message while prompt is being executed.');
+      return;
+    }
+    if (!text.trim()) {
+      return;
+    }
+    console.log('[ChatInput] Submitting message from UI textarea:', text.trim());
     sendMessage(text);
     setText('');
     if (textareaRef.current) {
@@ -33,16 +40,21 @@ export const ChatInput: React.FC = () => {
 
   return (
     <div className="chat-input-wrapper">
-      <div className="chat-input-card">
+      <div className={`chat-input-card ${isExecuting ? 'is-executing' : ''}`}>
         {/* Text Input */}
         <textarea
           ref={textareaRef}
           value={text}
+          disabled={isExecuting}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Antigravity or type instructions..."
+          placeholder={
+            isExecuting
+              ? 'Antigravity is working...'
+              : 'Ask anything, @ to mention, / for actions'
+          }
           rows={2}
-          className="chat-textarea"
+          className={`chat-textarea ${isExecuting ? 'textarea-disabled' : ''}`}
         />
 
         {/* Bottom Toolbar inside the box */}
@@ -51,6 +63,7 @@ export const ChatInput: React.FC = () => {
           <div className="toolbar-left">
             <button
               type="button"
+              disabled={isExecuting}
               className="icon-btn"
               title="Add context or file"
             >
@@ -59,6 +72,7 @@ export const ChatInput: React.FC = () => {
 
             <button
               type="button"
+              disabled={isExecuting}
               className="model-pill"
             >
               <span>Gemini 3.8 Flash Medium</span>
@@ -66,25 +80,37 @@ export const ChatInput: React.FC = () => {
             </button>
           </div>
 
-          {/* Right Controls: Mic & Send Button */}
+          {/* Right Controls: Mic & Send/Stop Button */}
           <div className="toolbar-right">
             <button
               type="button"
+              disabled={isExecuting}
               className="icon-btn"
               title="Voice dictation"
             >
               <Mic size={16} />
             </button>
 
-            <button
-              type="button"
-              disabled={!text.trim()}
-              onClick={handleSend}
-              className="send-btn"
-              title="Send message"
-            >
-              <ArrowUp size={16} strokeWidth={2.5} />
-            </button>
+            {isExecuting ? (
+              <button
+                type="button"
+                onClick={stopExecution}
+                className="stop-btn"
+                title="Stop current execution"
+              >
+                <Square size={13} fill="currentColor" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!text.trim()}
+                onClick={handleSend}
+                className="send-btn"
+                title="Send message"
+              >
+                <ArrowUp size={16} strokeWidth={2.5} />
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -219,10 +219,10 @@ export class BridgeDatabase {
     return this.stmtGetApprovalById.get(id) as DbApproval | undefined;
   }
 
-  public getRecentChatHistory(limit = 200): Array<{ id: string; type: string; payload: string; ts: number }> {
+  public getRecentChatHistory(limit = 300): Array<{ id: string; type: string; payload: string; ts: number }> {
     const rows = this.db.prepare(`
       SELECT id, type, payload, ts FROM events
-      WHERE type IN ('agent.message', 'agent.thought')
+      WHERE type IN ('agent.message', 'agent.thought', 'agent.tool_call', 'agent.tool_result', 'session.status_changed')
       ORDER BY seq DESC
       LIMIT ?
     `).all(limit) as any[];

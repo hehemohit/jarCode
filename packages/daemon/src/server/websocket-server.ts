@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { BridgeEvent } from '@antigravity-bridge/shared';
 import { BridgeDatabase } from '../db/database.js';
 import { PolicyEngine } from '../gate/policy-engine.js';

@@ -33,7 +33,12 @@ async function bootstrap() {
   processManager.setBroadcastHandler(broadcast);
   transcriptTailer.setBroadcastHandler(broadcast);
 
-  // 6. Start Listening
+  // 6. Auto-discover active session and start Listening
+  transcriptTailer.autoDiscoverSession();
+  setInterval(() => {
+    transcriptTailer.autoDiscoverSession();
+  }, 5000).unref();
+
   await app.listen({ port: PORT, host: HOST });
   console.log(`🌐 Desktop Bridge Daemon listening on http://${HOST}:${PORT}`);
   console.log(`📡 WebSocket stream ready on ws://${HOST}:${PORT}/ws`);

@@ -220,12 +220,13 @@ export class BridgeDatabase {
   }
 
   public getRecentChatHistory(limit = 200): Array<{ id: string; type: string; payload: string; ts: number }> {
-    return this.db.prepare(`
+    const rows = this.db.prepare(`
       SELECT id, type, payload, ts FROM events
       WHERE type IN ('agent.message', 'agent.thought')
-      ORDER BY seq ASC
+      ORDER BY seq DESC
       LIMIT ?
     `).all(limit) as any[];
+    return rows.reverse();
   }
 
   public close() {

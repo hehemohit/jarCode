@@ -52,6 +52,43 @@ export class TranscriptTailer {
     });
   }
 
+  public autoDiscoverSession(): boolean {
+    try {
+      const homeDir = process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\ACER';
+      const brainDir = path.join(homeDir, '.gemini', 'antigravity-ide', 'brain');
+      if (!fs.existsSync(brainDir)) return false;
+
+      const entries = fs.readdirSync(brainDir, { withFileTypes: true });
+      let newestTranscript: string | null = null;
+      let newestTime = 0;
+      let matchedSessionId: string | null = null;
+
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const candidateSession = entry.name;
+        const candidateLog = path.join(brainDir, candidateSession, '.system_generated', 'logs', 'transcript.jsonl');
+        if (fs.existsSync(candidateLog)) {
+          const stats = fs.statSync(candidateLog);
+          if (stats.mtimeMs > newestTime) {
+            newestTime = stats.mtimeMs;
+            newestTranscript = candidateLog;
+            matchedSessionId = candidateSession;
+          }
+        }
+      }
+
+      if (newestTranscript && matchedSessionId) {
+        console.log(`🔍 Auto-discovered active conversation: ${matchedSessionId}`);
+        console.log(`📄 Tailing transcript: ${newestTranscript}`);
+        this.trackFile(newestTranscript, matchedSessionId);
+        return true;
+      }
+    } catch (err: any) {
+      console.warn(`[TranscriptTailer] Auto-discovery error: ${err.message}`);
+    }
+    return false;
+  }
+
   private readNewLines() {
     if (!this.currentFilePath || !this.sessionId || !fs.existsSync(this.currentFilePath)) return;
 

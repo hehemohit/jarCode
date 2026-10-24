@@ -43,6 +43,7 @@ interface BridgeState {
   approve: (id: string) => Promise<void>;
   reject: (id: string, reason: string) => Promise<void>;
   killProcess: (id: string) => void;
+  sendMessage: (content: string) => void;
 }
 
 let socket: WebSocket | null = null;
@@ -237,6 +238,34 @@ export const useBridgeStore = create<BridgeState>((set, get) => ({
   killProcess: (id: string) => {
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ type: 'process.kill_requested', payload: { processId: id } }));
+    }
+  },
+
+  sendMessage: (content: string) => {
+    const text = content.trim();
+    if (!text) return;
+    const sessionId = get().sessionId || 'abf018be-2f73-4f42-b54c-c8b493daa487';
+    const tempId = Math.random().toString(36).substring(2, 9);
+
+    set((s) => ({
+      messages: [
+        ...s.messages,
+        {
+          id: tempId,
+          role: 'user',
+          content: text,
+          ts: Date.now(),
+        },
+      ],
+    }));
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(
+        JSON.stringify({
+          type: 'client.prompt_submitted',
+          payload: { content: text, sessionId },
+        })
+      );
     }
   },
 }));

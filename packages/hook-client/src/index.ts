@@ -18,31 +18,69 @@ const DEFAULT_TIMEOUT_MS = 300_000; // 5 minutes
 async function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = '';
+    let resolved = false;
     process.stdin.setEncoding('utf-8');
+
+    const tryResolve = () => {
+      if (resolved) return;
+      const trimmed = data.trim();
+      if (!trimmed) return;
+      try {
+        JSON.parse(trimmed);
+        resolved = true;
+        resolve(trimmed);
+      } catch {
+        // Not complete JSON yet
+      }
+    };
 
     process.stdin.on('data', (chunk: string | Buffer) => {
       data += chunk.toString();
+      tryResolve();
     });
 
     process.stdin.on('end', () => {
-      resolve(data.trim());
+      if (!resolved) {
+        resolved = true;
+        resolve(data.trim());
+      }
     });
 
     process.stdin.on('error', (err: Error) => {
-      reject(err);
+      if (!resolved) {
+        resolved = true;
+        reject(err);
+      }
     });
 
     // In case stdin is empty or tty
     if (process.stdin.isTTY) {
+      resolved = true;
       resolve('');
     }
+
+    // Safety timeout: if data has been received but didn't parse, or after 1s of inactivity
+    setTimeout(() => {
+      if (!resolved && data.trim()) {
+        resolved = true;
+        resolve(data.trim());
+      }
+    }, 1500);
   });
 }
 
-function printDecision(decision: 'allow' | 'deny' | 'ask' | 'force_ask', reason?: string, overwrite?: Record<string, any>) {
+function printDecision(
+  decision: 'allow' | 'deny' | 'ask' | 'force_ask',
+  reason?: string,
+  overwrite?: Record<string, any>,
+  permissionOverrides?: string[]
+) {
   const result: Record<string, any> = { decision };
   if (reason) result.reason = reason;
   if (overwrite) result.overwrite = overwrite;
+  if (permissionOverrides && permissionOverrides.length > 0) {
+    result.permissionOverrides = permissionOverrides;
+  }
   
   process.stdout.write(JSON.stringify(result) + '\n');
 }
@@ -92,10 +130,26 @@ async function main() {
       overwrite?: Record<string, any>;
     };
 
+    const decision = decisionObj.decision || 'allow';
+    const permissionOverrides: string[] = [];
+
+    if (decision === 'allow') {
+      const toolName = hookPayload?.toolCall?.name;
+      const toolArgs = hookPayload?.toolCall?.args || {};
+
+      if (toolName === 'run_command' && toolArgs.CommandLine) {
+        permissionOverrides.push(`command(${toolArgs.CommandLine})`);
+      } else if (toolArgs.TargetFile) {
+        permissionOverrides.push(`file_write(${toolArgs.TargetFile})`);
+        permissionOverrides.push(`file(${toolArgs.TargetFile})`);
+      }
+    }
+
     printDecision(
-      decisionObj.decision || 'allow',
+      decision,
       decisionObj.reason,
-      decisionObj.overwrite
+      decisionObj.overwrite,
+      permissionOverrides
     );
     process.exit(0);
   } catch (err: any) {

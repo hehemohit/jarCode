@@ -115,7 +115,15 @@ function formatToolAction(tc: ToolCallEntry): FormattedAction {
   };
 }
 
-function computeSummaryTitle(actions: FormattedAction[], thoughtsCount: number, isWorking: boolean): string {
+function computeSummaryTitle(
+  actions: FormattedAction[],
+  thoughtsCount: number,
+  isWorking: boolean,
+  hasApprovals: boolean = false
+): string {
+  if (hasApprovals) {
+    return 'Action Required: Permission Gate';
+  }
   let fileCount = 0;
   let folderCount = 0;
   let searchCount = 0;
@@ -324,14 +332,16 @@ export const ChatStream: React.FC = () => {
     <div className="chat-content-width">
       {turns.map((turn, tIdx) => {
         const formattedActions = turn.turnToolCalls.map(formatToolAction);
+        const hasApprovals = turn.turnApprovals.length > 0;
         const hasExecutionSteps =
-          formattedActions.length > 0 || turn.turnThoughts.length > 0 || turn.isCurrentWorking;
-        const isCollapsed = collapsedTurns[turn.id] ?? false;
+          formattedActions.length > 0 || turn.turnThoughts.length > 0 || turn.isCurrentWorking || hasApprovals;
+        const isCollapsed = hasApprovals ? false : (collapsedTurns[turn.id] ?? false);
         const thoughtsExpanded = showThoughtDetails[turn.id] ?? false;
         const summaryTitle = computeSummaryTitle(
           formattedActions,
           turn.turnThoughts.length,
-          turn.isCurrentWorking
+          turn.isCurrentWorking,
+          hasApprovals
         );
 
         return (

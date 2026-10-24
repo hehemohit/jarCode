@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ../packages/hook-client/dist/index.js",
+            "command": "node -e \"const p = require('fs').existsSync('./packages/hook-client/dist/index.js') ? './packages/hook-client/dist/index.js' : '../packages/hook-client/dist/index.js'; require(require('path').resolve(p));\"",
             "timeout": 300
           }
         ]

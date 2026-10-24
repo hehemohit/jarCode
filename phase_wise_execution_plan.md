@@ -10,11 +10,11 @@
 
 | Phase | Component / Goal | Key Deliverable | Status |
 | :--- | :--- | :--- | :--- |
-| **Phase 1** | **Monorepo & Protocol Foundation** | Pnpm workspace + `packages/shared` types/events | ⏳ Next |
-| **Phase 2** | **Antigravity Hook Interception** | `packages/hook-client` + `.agents/hooks.json` | ⚪ Queued |
-| **Phase 3** | **Desktop Bridge Daemon Core** | Fastify IPC + SQLite WAL + ConPTY manager | ⚪ Queued |
-| **Phase 4** | **Responsive Web Application** | React 19 + Diff Viewer + xterm.js terminal | ⚪ Queued |
-| **Phase 5** | **E2E Integration & Tailscale Test** | Real prompt $\rightarrow$ Phone approve $\rightarrow$ Agent resume | ⚪ Queued |
+| **Phase 1** | **Monorepo & Protocol Foundation** | Pnpm workspace + `packages/shared` types/events | ✅ Complete |
+| **Phase 2** | **Antigravity Hook Interception** | `packages/hook-client` + `.agents/hooks.json` | ✅ Complete |
+| **Phase 3** | **Desktop Bridge Daemon Core** | Fastify IPC + SQLite WAL + ConPTY manager | ✅ Complete |
+| **Phase 4** | **Responsive Web Application** | React 19 + Diff Viewer + xterm.js terminal | ✅ Complete |
+| **Phase 5** | **E2E Integration & Tailscale Test** | Real prompt $\rightarrow$ Phone approve $\rightarrow$ Agent resume | 🟢 Live / Ready |
 | **Phase 6** | **IDE Companion Extension** | Status bar presence + Active chat injection | ⚪ Queued |
 
 ---

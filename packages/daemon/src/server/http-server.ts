@@ -11,12 +11,25 @@ export function createHttpServer(policyEngine: PolicyEngine, transcriptTailer: T
 
   fastify.register(cors, { origin: true });
 
-  // Serve static web application frontend if built
-  const webDistPath = path.resolve(process.cwd(), 'packages', 'web', 'dist');
-  if (fs.existsSync(webDistPath)) {
+  // Locate static web application frontend dist directory
+  const candidatePaths = [
+    path.resolve(process.cwd(), '..', 'web', 'dist'),
+    path.resolve(process.cwd(), 'packages', 'web', 'dist'),
+  ];
+  const webDistPath = candidatePaths.find((p) => fs.existsSync(p));
+
+  if (webDistPath) {
     fastify.register(fastifyStatic, {
       root: webDistPath,
       prefix: '/',
+    });
+
+    // SPA fallback: any non-API route serves index.html
+    fastify.setNotFoundHandler((request, reply) => {
+      if (!request.raw.url?.startsWith('/api')) {
+        return reply.sendFile('index.html');
+      }
+      reply.code(404).send({ error: 'Not Found' });
     });
   }
 
